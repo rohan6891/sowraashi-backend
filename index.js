@@ -9,7 +9,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
 // Configure dotenv based on environment
-dotenv.config({ path: '.env.production' });
+dotenv.config();
 
 console.log(process.env.JWT_SECRET);
 

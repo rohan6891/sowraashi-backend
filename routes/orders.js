@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose'; 
 const router = express.Router();
 
-dotenv.config({ path: '.env.production' });
+dotenv.config();
 
 // Create custom order (no authentication required)
 router.post('/custom', async (req, res) => {

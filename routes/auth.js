@@ -4,7 +4,7 @@ import User from '../models/User.js';
 import dotenv from 'dotenv';
 const router = express.Router();
 
-dotenv.config({path: '.env.production'})
+dotenv.config()
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
