@@ -50,7 +50,7 @@ app.use(limiter);
 // CORS Configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.CORS_ORIGIN || 'https://yourdomain.com'
+    ? process.env.CORS_ORIGIN || 'https://sowraashi-frontend.vercel.app'
     : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true,
   optionsSuccessStatus: 200
