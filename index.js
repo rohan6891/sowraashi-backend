@@ -28,7 +28,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:", "http://localhost:5173", "http://localhost:3000", "*"],
+      imgSrc: ["'self'", "data:", "https:", "http://localhost:5173", "http://localhost:3000", "https://sowraashi-frontend.vercel.app/"],
     },
   },
 }));
