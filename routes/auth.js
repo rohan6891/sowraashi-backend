@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    // Generate JWT token with shorter expiration for security
     const token = jwt.sign(
       { 
         userId: user._id, 
@@ -95,7 +95,7 @@ router.post('/login', async (req, res) => {
         name: user.name
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '2h' }
     );
 
     // Return user info and token

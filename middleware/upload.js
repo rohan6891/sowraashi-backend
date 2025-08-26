@@ -7,9 +7,10 @@ const storage = multer.diskStorage({
     cb(null, 'public/uploads/');
   },
   filename: function (req, file, cb) {
-    // Generate unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    // Use product name from request body, sanitize it for filename
+    const productName = req.body.name || 'product';
+    const sanitizedName = productName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+    cb(null, `${sanitizedName}${path.extname(file.originalname)}`);
   }
 });
 
