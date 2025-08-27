@@ -10,10 +10,6 @@ import helmet from 'helmet';
 
 // Configure dotenv
 dotenv.config();
-
-console.log("JWT_SECRET:", process.env.JWT_SECRET);
-console.log("CORS_ORIGIN:", process.env.CORS_ORIGIN);
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -21,40 +17,20 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Security Middleware
-app.use(
-  helmet({
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "https:",
-          "http://localhost:5173",
-          "http://localhost:3000",
-          "https://sowraashi-frontend.vercel.app",
-        ],
-      },
-    },
-  })
-);
+app.use(helmet());
 
 // Trust Proxy
 app.set("trust proxy", 1);
 
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-  message: "Too many requests from this IP, please try again later.",
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
+// const limiter = rateLimit({
+//   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+//   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+//   message: "Too many requests from this IP, please try again later.",
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
+// app.use(limiter);
 
 // ✅ CORS Configuration
 const corsOptions = {
