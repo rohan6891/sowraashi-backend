@@ -158,6 +158,8 @@ router.post('/', authenticateToken, requireAdmin, upload.single('image'), async 
       return res.status(400).json({ message: 'Product image is required' });
     }
     
+    console.log(req.file.filename);
+
     const product = new Product({
       name,
       category,

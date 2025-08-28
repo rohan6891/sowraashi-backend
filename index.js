@@ -7,18 +7,45 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import fs from 'fs';
 
-// Configure dotenv
+// Configure dotenv based on environment
 dotenv.config();
+
+console.log(process.env.JWT_SECRET);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// CORS Configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.CORS_ORIGIN
+    : ['http://localhost:3000', 'http://localhost:5173'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+// Apply CORS middleware globally
+app.use(cors(corsOptions));
+
 // Security Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:", "http://localhost:5173", "http://localhost:3000", "*"],
+    },
+  },
+}));
 
 // Trust Proxy
 app.set("trust proxy", 1);
@@ -26,119 +53,90 @@ app.set("trust proxy", 1);
 // Rate limiting
 // const limiter = rateLimit({
 //   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-//   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-//   message: "Too many requests from this IP, please try again later.",
+//   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+//   message: 'Too many requests from this IP, please try again later.',
 //   standardHeaders: true,
 //   legacyHeaders: false,
 // });
+
 // app.use(limiter);
 
-// CORS Configuration
-const corsOptions = {
-  origin:
-    process.env.NODE_ENV === "production"
-      ? process.env.CORS_ORIGIN
-      : ["http://localhost:3000", "http://localhost:5173"],
-  credentials: true,
-  optionsSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
-
-// Body parser
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-app.use(express.static("public"));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.static('public'));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI);
+
 const db = mongoose.connection;
-db.on("error", console.error.bind(console, "MongoDB connection error:"));
-db.once("open", () => {
-  console.log("Connected to MongoDB");
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+db.once('open', () => {
+  console.log('Connected to MongoDB');
 });
 
-// Multer configuration for file uploads
+// Multer configuration for file uploads with security
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = process.env.UPLOAD_PATH || "public/uploads/";
-    // Ensure the uploads directory exists
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
+    cb(null, process.env.UPLOAD_PATH || 'public/uploads/');
   },
   filename: function (req, file, cb) {
-    // Use the original filename
-    let filename = path.basename(file.originalname); // Sanitize to prevent path traversal
-    const uploadDir = process.env.UPLOAD_PATH || "public/uploads/";
-    let counter = 1;
-    
-    // Handle filename conflicts
-    while (fs.existsSync(path.join(uploadDir, filename))) {
-      const ext = path.extname(file.originalname);
-      const name = path.basename(file.originalname, ext);
-      filename = `${name}-${counter}${ext}`;
-      counter++;
-    }
-    
-    cb(null, filename);
-  },
+    // Sanitize filename
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    cb(null, sanitizedName);
+  }
 });
 
-const upload = multer({
+const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5MB
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5MB default
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-    ];
+    // Only allow specific image types
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only image files are allowed!"), false);
+      cb(new Error('Only image files are allowed!'), false);
     }
-  },
+  }
 });
 
 // Import routes
-import authRoutes from "./routes/auth.js";
-import productRoutes from "./routes/products.js";
-import orderRoutes from "./routes/orders.js";
+import authRoutes from './routes/auth.js';
+import productRoutes from './routes/products.js';
+import orderRoutes from './routes/orders.js';
 
 // Use routes
-app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
 
-// Serve uploaded files with CORS headers
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  if (process.env.NODE_ENV === "production") {
-    res.status(500).json({
-      message: "Internal server error",
-      error: "Something went wrong. Please try again later.",
+  
+  // Don't leak error details in production
+  if (process.env.NODE_ENV === 'production') {
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: 'Something went wrong. Please try again later.' 
     });
   } else {
-    res.status(500).json({
-      message: "Internal server error",
+    res.status(500).json({ 
+      message: 'Internal server error',
       error: err.message,
-      stack: err.stack,
+      stack: err.stack 
     });
   }
 });
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
+  res.status(404).json({ message: 'Route not found' });
 });
 
 app.listen(PORT, () => {
