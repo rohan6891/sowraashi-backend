@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import fs from 'fs';
 
 // Configure dotenv
 dotenv.config();
@@ -32,7 +33,7 @@ app.set("trust proxy", 1);
 // });
 // app.use(limiter);
 
-// ✅ CORS Configuration
+// CORS Configuration
 const corsOptions = {
   origin:
     process.env.NODE_ENV === "production"
@@ -41,7 +42,7 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
 };
-app.use(cors(corsOptions)); // ✅ Apply globally
+app.use(cors(corsOptions));
 
 // Body parser
 app.use(express.json({ limit: "10mb" }));
@@ -59,11 +60,28 @@ db.once("open", () => {
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, process.env.UPLOAD_PATH || "public/uploads/");
+    const uploadDir = process.env.UPLOAD_PATH || "public/uploads/";
+    // Ensure the uploads directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
-    cb(null, sanitizedName);
+    // Use the original filename
+    let filename = path.basename(file.originalname); // Sanitize to prevent path traversal
+    const uploadDir = process.env.UPLOAD_PATH || "public/uploads/";
+    let counter = 1;
+    
+    // Handle filename conflicts
+    while (fs.existsSync(path.join(uploadDir, filename))) {
+      const ext = path.extname(file.originalname);
+      const name = path.basename(file.originalname, ext);
+      filename = `${name}-${counter}${ext}`;
+      counter++;
+    }
+    
+    cb(null, filename);
   },
 });
 

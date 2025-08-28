@@ -161,7 +161,7 @@ router.post('/', authenticateToken, requireAdmin, upload.single('image'), async 
     const product = new Product({
       name,
       category,
-      image: `/uploads/${req.file.filename}`,
+      image: `/uploads/${req.file.filename}`, // Use filename from multer (original or with counter)
       shortDescription,
       fullDescription,
       features: features ? JSON.parse(features) : [],
@@ -202,7 +202,7 @@ router.put('/:id', authenticateToken, requireAdmin, upload.single('image'), asyn
     
     // Handle image update
     if (req.file) {
-      updateData.image = `/uploads/${req.file.filename}`;
+      updateData.image = `/uploads/${req.file.filename}`; // Use filename from multer (original or with counter)
     }
     
     // Parse JSON fields
