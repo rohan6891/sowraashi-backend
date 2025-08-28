@@ -63,9 +63,10 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
-    cb(null, Date.now() + "-" + sanitizedName);
+    cb(null, sanitizedName);
   },
 });
+
 const upload = multer({
   storage: storage,
   limits: {
